@@ -388,12 +388,26 @@ export default function Assessment() {
             }
         } catch (error) {
             console.error("Result submission error:", error);
-            Swal.fire({
-                title: 'Submission Error!',
-                text: error.response?.data?.message || error.message || 'An error occurred while submitting your result. Please contact support.',
-                icon: 'error',
-                confirmButtonColor: '#0D9488'
-            });
+            const errMsg = error.response?.data?.message || error.message || '';
+            if (error.response?.status === 409 || errMsg.toLowerCase().includes('already submitted')) {
+                Swal.fire({
+                    title: 'Already Submitted!',
+                    text: 'You have already submitted this test. Redirecting to your result...',
+                    icon: 'info',
+                    confirmButtonColor: '#0D9488',
+                    timer: 2500,
+                    showConfirmButton: false
+                }).then(() => {
+                    navigate(`/result/${studentId}/${assesmentQuestionsId}/${certificateId}`, { replace: true });
+                });
+            } else {
+                Swal.fire({
+                    title: 'Submission Error!',
+                    text: errMsg || 'An error occurred while submitting your result. Please contact support.',
+                    icon: 'error',
+                    confirmButtonColor: '#0D9488'
+                });
+            }
         } finally {
             setSubmitting(false);
         }
