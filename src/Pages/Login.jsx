@@ -714,7 +714,9 @@ export default function DigiCodersPortal() {
                 {/* Countdown Overlay */}
                 {countdown && (
                     <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#0D9488] to-[#115E59] flex flex-col items-center justify-center p-6">
-                        <img src="/talenthunt.png" alt="TalentHunt" className="h-24 mb-6 object-contain" />
+                        <div className="w-28 h-28 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg">
+                            <img src="/talenthunt.png" alt="TalentHunt" className="h-20 w-20 object-contain rounded-full" />
+                        </div>
                         <h1 className="text-white text-2xl md:text-4xl font-black text-center mb-2">Talent Hunt Scholarship Test</h1>
                         <p className="text-teal-200 text-sm md:text-base mb-8 text-center">Starting on {countdown.startTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} at {countdown.startTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
                         <div className="flex gap-4 md:gap-8">
@@ -756,17 +758,21 @@ export default function DigiCodersPortal() {
                             <div className="inline-flex items-center justify-center mb-4">
 
                                 {/* CLEAN CONTAINER */}
-                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-3">
-                                    <img
-                                        src="/talenthunt.png"
-                                        alt="TalentHunt Logo"
-                                        className="h-24 md:h-32 w-auto object-contain"
-                                    />
-                                    <img
-                                        src="/digicoders-logo-circle.png"
-                                        alt="DigiCoders Logo"
-                                        className="h-24 md:h-32 w-auto object-contain mix-blend-darken"
-                                    />
+                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-4">
+                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src="/talenthunt.png"
+                                            alt="TalentHunt Logo"
+                                            className="h-20 md:h-28 w-20 md:w-28 object-contain rounded-full"
+                                        />
+                                    </div>
+                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src="/digicoders-logo-circle.png"
+                                            alt="DigiCoders Logo"
+                                            className="h-20 md:h-28 w-20 md:w-28 object-contain mix-blend-darken"
+                                        />
+                                    </div>
                                 </div>
 
                             </div>

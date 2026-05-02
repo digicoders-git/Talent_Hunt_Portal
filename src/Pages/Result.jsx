@@ -450,16 +450,12 @@ export default function Result() {
                     {/* Header */}
                     <div className="mb-4">
                         <div className="flex justify-center items-center gap-4 mb-3">
-                            <img
-                                src="/talenthunt.png"
-                                alt="TalentHunt Logo"
-                                className="h-20 md:h-28 object-contain"
-                            />
-                            <img
-                                src="/digicoders-logo-circle.png"
-                                alt="DigiCoders Logo"
-                                className="h-20 md:h-28 object-contain mix-blend-darken"
-                            />
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                <img src="/talenthunt.png" alt="TalentHunt Logo" className="h-20 md:h-28 w-20 md:w-28 object-contain rounded-full" />
+                            </div>
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                <img src="/digicoders-logo-circle.png" alt="DigiCoders Logo" className="h-20 md:h-28 w-20 md:w-28 object-contain mix-blend-darken" />
+                            </div>
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2 mb-6">
                             <h2 className="text-2xl md:text-3xl font-bold text-[#0D9488] text-center">

@@ -150,7 +150,7 @@ export default function RegisterNew() {
                 setSubmitting(false); return;
             }
             if (now < start) {
-                Swal.fire({ title: 'Assessment Not Started!', text: `Please wait. Assessment will start at ${start.toLocaleString()}`, icon: 'info', confirmButtonColor: '#0D9488' });
+                Swal.fire({ title: '⏳ Talent Hunt Scholarship Test', text: `Talent Hunt Scholarship Test will start from ${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })} on ${start.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}. Please be ready! 🎯`, icon: 'info', confirmButtonColor: '#0D9488' });
                 setSubmitting(false); return;
             }
             if (now > end) {
@@ -188,9 +188,13 @@ export default function RegisterNew() {
                     <div className="relative px-6 py-8 overflow-hidden">
                         <div className="relative z-10 text-center">
                             <div className="inline-flex items-center justify-center mb-4">
-                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-3">
-                                    <img src="/talenthunt.png" alt="TalentHunt Logo" className="h-24 md:h-32 w-auto object-contain" />
-                                    <img src="/digicoders-logo-circle.png" alt="DigiCoders Logo" className="h-24 md:h-32 w-auto object-contain mix-blend-darken" />
+                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-4">
+                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                        <img src="/talenthunt.png" alt="TalentHunt Logo" className="h-20 md:h-28 w-20 md:w-28 object-contain rounded-full" />
+                                    </div>
+                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-2 border-gray-100 shadow flex items-center justify-center overflow-hidden">
+                                        <img src="/digicoders-logo-circle.png" alt="DigiCoders Logo" className="h-20 md:h-28 w-20 md:w-28 object-contain mix-blend-darken" />
+                                    </div>
                                 </div>
                             </div>
                             <h1 className="text-2xl md:text-5xl font-black text-[#1F2937] mb-4">Talent Hunt Scholarship Test</h1>
