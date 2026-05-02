@@ -122,7 +122,6 @@ export default function AssessmentResult() {
             });
 
             if (response.success) {
-                // Store assessment name and certificate ID from response
                 setAssessmentName(response.assessmentName || '');
                 setCertificateId(response.certificateName || null);
 
@@ -146,16 +145,13 @@ export default function AssessmentResult() {
                 setFirstSubmissions(formatData(response.firstSubmission || [], 1));
                 setSecondSubmissions(formatData(response.reattempt || [], 2));
 
-                const firstTotal = response.firstSubmission?.length || 0;
-                const secondTotal = response.reattempt?.length || 0;
-
                 setPagination({
-                    total: activeTab === 'first' ? firstTotal : secondTotal,
-                    totalPages: Math.ceil((activeTab === 'first' ? firstTotal : secondTotal) / itemsPerPage),
+                    total: response.pagination?.total || 0,
+                    totalPages: response.pagination?.totalPages || 1,
                     limit: itemsPerPage,
-                    page: 1
+                    page
                 });
-                setCurrentPage(1);
+                setCurrentPage(page);
             }
         } catch (error) {
             console.error("Failed to fetch assessment results:", error);
@@ -324,32 +320,23 @@ export default function AssessmentResult() {
         return activeTab === 'first' ? firstSubmissions : secondSubmissions;
     };
 
-    // Get paginated data for current tab
+    // Server-side pagination - data already paginated
     const getPaginatedData = () => {
-        const currentData = getCurrentData();
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return currentData.slice(startIndex, endIndex);
+        return getCurrentData();
     };
 
     // Update pagination when tab changes
     useEffect(() => {
         if (!isInitialLoad) {
-            const currentData = getCurrentData();
-            setPagination({
-                total: currentData.length,
-                totalPages: Math.ceil(currentData.length / itemsPerPage),
-                limit: itemsPerPage,
-                page: 1 // Reset to page 1 when switching tabs
-            });
             setCurrentPage(1);
+            fetchResultsWithParams(1, searchQuery, filters);
         }
-    }, [activeTab, firstSubmissions, secondSubmissions]);
+    }, [activeTab]);
 
     const handlePageChange = (page) => {
-        const totalPages = Math.ceil(getCurrentData().length / itemsPerPage);
-        if (page >= 1 && page <= totalPages) {
+        if (page >= 1 && page <= pagination.totalPages) {
             setCurrentPage(page);
+            fetchResultsWithParams(page, searchQuery, filters);
         }
     };
 
