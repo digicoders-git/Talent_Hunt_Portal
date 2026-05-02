@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { User, Phone, GraduationCap, Calendar, BookOpen, Key, Sparkles, ArrowRight, ChevronDown, Search, Mail } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -68,6 +68,12 @@ export default function DigiCodersPortal() {
 
     const [focusedField, setFocusedField] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [countdown, setCountdown] = useState(null); // { days, hours, minutes, seconds, startTime }
+    const countdownRef = useRef(null);
+
+    useEffect(() => {
+        return () => clearInterval(countdownRef.current);
+    }, []);
 
     useEffect(() => {
         const fetchCertificateTemplate = async () => {
@@ -587,12 +593,29 @@ export default function DigiCodersPortal() {
             }
 
             if (now < start) {
-                Swal.fire({
-                    title: 'Assessment Not Started!',
-                    text: `Please wait. Assessment will start at ${start.toLocaleString()}`,
-                    icon: 'info',
-                    confirmButtonColor: '#0D9488',
-                });
+                // Start countdown
+                const tick = () => {
+                    const remaining = new Date(start) - new Date();
+                    if (remaining <= 0) {
+                        clearInterval(countdownRef.current);
+                        setCountdown(null);
+                        // Play start sound
+                        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3');
+                        audio.play().catch(() => {});
+                        return;
+                    }
+                    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                    setCountdown({ days, hours, minutes, seconds, startTime: start });
+                };
+                tick();
+                clearInterval(countdownRef.current);
+                countdownRef.current = setInterval(tick, 1000);
+                // Play tick sound every second
+                const beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA==');
+                beep.play().catch(() => {});
                 setSubmitting(false);
                 return;
             }
@@ -687,6 +710,40 @@ export default function DigiCodersPortal() {
                 <div className="flex justify-center mb-6">
                     <Sparkles className="w-8 h-8 text-[#0D9488] animate-pulse" />
                 </div>
+
+                {/* Countdown Overlay */}
+                {countdown && (
+                    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#0D9488] to-[#115E59] flex flex-col items-center justify-center p-6">
+                        <img src="/talenthunt.png" alt="TalentHunt" className="h-24 mb-6 object-contain" />
+                        <h1 className="text-white text-2xl md:text-4xl font-black text-center mb-2">Talent Hunt Scholarship Test</h1>
+                        <p className="text-teal-200 text-sm md:text-base mb-8 text-center">Starting on {countdown.startTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} at {countdown.startTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                        <div className="flex gap-4 md:gap-8">
+                            {countdown.days > 0 && (
+                                <div className="bg-white/20 backdrop-blur rounded-2xl p-4 md:p-6 text-center min-w-[70px] md:min-w-[100px]">
+                                    <p className="text-white text-3xl md:text-5xl font-black">{String(countdown.days).padStart(2,'0')}</p>
+                                    <p className="text-teal-200 text-xs md:text-sm font-bold uppercase mt-1">Days</p>
+                                </div>
+                            )}
+                            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 md:p-6 text-center min-w-[70px] md:min-w-[100px]">
+                                <p className="text-white text-3xl md:text-5xl font-black">{String(countdown.hours).padStart(2,'0')}</p>
+                                <p className="text-teal-200 text-xs md:text-sm font-bold uppercase mt-1">Hours</p>
+                            </div>
+                            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 md:p-6 text-center min-w-[70px] md:min-w-[100px]">
+                                <p className="text-white text-3xl md:text-5xl font-black">{String(countdown.minutes).padStart(2,'0')}</p>
+                                <p className="text-teal-200 text-xs md:text-sm font-bold uppercase mt-1">Minutes</p>
+                            </div>
+                            <div className={`bg-white/20 backdrop-blur rounded-2xl p-4 md:p-6 text-center min-w-[70px] md:min-w-[100px] ${countdown.seconds % 2 === 0 ? 'bg-white/30' : ''}`}>
+                                <p className="text-white text-3xl md:text-5xl font-black">{String(countdown.seconds).padStart(2,'0')}</p>
+                                <p className="text-teal-200 text-xs md:text-sm font-bold uppercase mt-1">Seconds</p>
+                            </div>
+                        </div>
+                        <p className="text-teal-100 mt-8 text-sm animate-pulse">🎯 Get ready! Fill your details and submit when test starts.</p>
+                        <button
+                            onClick={() => { clearInterval(countdownRef.current); setCountdown(null); }}
+                            className="mt-6 text-teal-200 underline text-sm"
+                        >Go back to form</button>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-200">
                     {/* Header Section with Animated Background */}
