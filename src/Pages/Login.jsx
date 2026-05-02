@@ -699,15 +699,17 @@ export default function DigiCodersPortal() {
                             <div className="inline-flex items-center justify-center mb-4">
 
                                 {/* CLEAN CONTAINER */}
-                                <div className="bg-white px-4 py-3 rounded-2xl">
-
-                                    {/* IMAGE SMALLER SIZE */}
+                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-3">
                                     <img
                                         src="/talenthunt.png"
+                                        alt="TalentHunt Logo"
+                                        className="h-24 md:h-32 w-auto object-contain"
+                                    />
+                                    <img
+                                        src="/digicoders-logo-circle.png"
                                         alt="DigiCoders Logo"
                                         className="h-24 md:h-32 w-auto object-contain mix-blend-darken"
                                     />
-
                                 </div>
 
                             </div>

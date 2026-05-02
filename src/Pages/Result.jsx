@@ -370,7 +370,7 @@ export default function Result() {
                 });
             }
 
-            // 5. Assessment Code
+            // 5. Talent Hunt Code
             if (certificateData.assessmentCode) {
                 const codeFont = fontCSSMap[certificateData.assessmentCode?.fontFamily] || 'Inter, sans-serif';
                 await ensureFontLoaded(codeFont);
@@ -449,11 +449,16 @@ export default function Result() {
 
                     {/* Header */}
                     <div className="mb-4">
-                        <div className="flex justify-center mb-3">
+                        <div className="flex justify-center items-center gap-4 mb-3">
                             <img
-                                src="/icon.jpg"
+                                src="/talenthunt.png"
+                                alt="TalentHunt Logo"
+                                className="h-20 md:h-28 object-contain"
+                            />
+                            <img
+                                src="/digicoders-logo-circle.png"
                                 alt="DigiCoders Logo"
-                                className="h-24 md:h-32 object-contain mix-blend-darken"
+                                className="h-20 md:h-28 object-contain mix-blend-darken"
                             />
                         </div>
                         <div className="flex flex-col justify-center items-center gap-2 mb-6">
@@ -462,7 +467,7 @@ export default function Result() {
                             </h2>
                         </div>
 
-                        <p className="text-gray-500 text-base">You have successfully completed the assessment.</p>
+                        <p className="text-gray-500 text-base">You have successfully completed the Talent Hunt Scholarship Test.</p>
 
                         {/* Assessment Details Table */}
                         <div className="mt-4 mb-6">
@@ -471,7 +476,7 @@ export default function Result() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-300">
-                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Assessment Code</th>
+                                            <th className="py-3 px-4 text-center font-bold text-gray-700">Talent Hunt Code</th>
                                             <th className="py-3 px-4 text-center font-bold text-gray-700">Date</th>
                                             <th className="py-3 px-4 text-center font-bold text-gray-700">Time</th>
                                             <th className="py-3 px-4 text-center font-bold text-gray-700">Duration</th>
@@ -491,7 +496,7 @@ export default function Result() {
                             {/* Mobile Compact Layout - Labels Left, Values Right */}
                             <div className="md:hidden border border-gray-300 rounded-lg p-3 space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="font-bold text-gray-700 text-sm">Assessment Code:</span>
+                                    <span className="font-bold text-gray-700 text-sm">Talent Hunt Code:</span>
                                     <span className="font-medium text-gray-600 text-sm">{resultData.student?.code}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
@@ -511,7 +516,7 @@ export default function Result() {
                     </div>
 
                     <div className="flex flex-col items-center gap-2 mb-3">
-                        <h3 className="text-lg font-bold text-[#1F2937] mb-4 border-b-2 border-[#0D9488] pb-1 inline-block">Assessment Result</h3>
+                        <h3 className="text-lg font-bold text-[#1F2937] mb-4 border-b-2 border-[#0D9488] pb-1 inline-block">Talent Hunt Result</h3>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mb-5">
@@ -604,7 +609,7 @@ export default function Result() {
                             </div>
                         </div>
 
-                        <p className="mt-4 text-gray-400 text-sm">Congratulations! You have completed the assessment.</p>
+                        <p className="mt-4 text-gray-400 text-sm">Congratulations! You have completed the Talent Hunt Scholarship Test.</p>
                     </div>
                 </div>
             </div>

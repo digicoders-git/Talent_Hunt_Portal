@@ -188,8 +188,9 @@ export default function Register() {
                     <div className="relative px-6 py-8 overflow-hidden">
                         <div className="relative z-10 text-center">
                             <div className="inline-flex items-center justify-center mb-4">
-                                <div className="bg-white px-4 py-3 rounded-2xl">
-                                    <img src="/talenthunt.png" alt="TalentHunt Logo" className="h-24 md:h-32 w-auto object-contain mix-blend-darken" />
+                                <div className="bg-white px-4 py-3 rounded-2xl flex items-center gap-3">
+                                    <img src="/talenthunt.png" alt="TalentHunt Logo" className="h-24 md:h-32 w-auto object-contain" />
+                                    <img src="/digicoders-logo-circle.png" alt="DigiCoders Logo" className="h-24 md:h-32 w-auto object-contain mix-blend-darken" />
                                 </div>
                             </div>
                             <h1 className="text-2xl md:text-5xl font-black text-[#1F2937] mb-4">Talent Hunt Scholarship Test</h1>
