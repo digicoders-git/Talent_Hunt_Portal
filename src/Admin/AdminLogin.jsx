@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, User, Shield, KeyRound } from 'lucide-react';
+import { Mail, Lock, ArrowRight, User, Shield, KeyRound, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminLoginApi, verifyAdminLoginOtpApi, userLoginApi } from '../API/auth';
@@ -8,13 +8,11 @@ export default function AdminLogin() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('admin');
     const [loading, setLoading] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
 
-    // Admin - step 1: email, step 2: otp
     const [adminEmail, setAdminEmail] = useState('');
     const [adminOtpStep, setAdminOtpStep] = useState(false);
     const [adminOtp, setAdminOtp] = useState('');
-
-    // User - direct login
     const [userForm, setUserForm] = useState({ email: '', password: '' });
 
     const switchTab = (tab) => {
@@ -25,12 +23,53 @@ export default function AdminLogin() {
         setUserForm({ email: '', userId: '', password: '' });
     };
 
-    // ── Admin Step 1: Send OTP ──────────────────────────────
+    const getLocationAndIP = async () => {
+        let ip = 'Unknown';
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            ip = ipData.ip;
+        } catch (e) {}
+
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation not supported by your browser'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    try {
+                        const geoRes = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+                            { headers: { 'Accept-Language': 'en' } }
+                        );
+                        const geoData = await geoRes.json();
+                        if (geoData.display_name) address = geoData.display_name;
+                    } catch (e) {}
+                    resolve({ latitude, longitude, address, ip });
+                },
+                (err) => reject(new Error('Location access denied. Please allow location to continue.')),
+                { timeout: 10000 }
+            );
+        });
+    };
+
     const handleAdminSendOtp = async () => {
         if (!adminEmail) return toast.error('Please enter your email');
+        setLocationLoading(true);
+        let locationData = {};
+        try {
+            locationData = await getLocationAndIP();
+        } catch (err) {
+            setLocationLoading(false);
+            return toast.error(err.message);
+        }
+        setLocationLoading(false);
         setLoading(true);
         try {
-            const res = await adminLoginApi({ email: adminEmail });
+            const res = await adminLoginApi({ email: adminEmail, ...locationData });
             if (res.success && res.otpSent) {
                 toast.success('OTP sent to admin email!');
                 setAdminOtpStep(true);
@@ -44,7 +83,6 @@ export default function AdminLogin() {
         }
     };
 
-    // ── Admin Step 2: Verify OTP ────────────────────────────
     const handleAdminVerifyOtp = async () => {
         if (!adminOtp || adminOtp.length !== 6) return toast.error('Enter valid 6-digit OTP');
         setLoading(true);
@@ -63,13 +101,21 @@ export default function AdminLogin() {
         }
     };
 
-    // ── User: Direct Login ──────────────────────────────────
     const handleUserLogin = async () => {
         if (!userForm.email || !userForm.password)
             return toast.error('All fields are required');
+        setLocationLoading(true);
+        let locationData = {};
+        try {
+            locationData = await getLocationAndIP();
+        } catch (err) {
+            setLocationLoading(false);
+            return toast.error(err.message);
+        }
+        setLocationLoading(false);
         setLoading(true);
         try {
-            const res = await userLoginApi({ email: userForm.email, password: userForm.password });
+            const res = await userLoginApi({ email: userForm.email, password: userForm.password, ...locationData });
             if (res.success) {
                 toast.success('Login Successful');
                 navigate('/admin/dashboard');
@@ -128,10 +174,12 @@ export default function AdminLogin() {
                             </div>
                             <button
                                 onClick={handleAdminSendOtp}
-                                disabled={loading}
-                                className={`w-full ${loading ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest`}
+                                disabled={loading || locationLoading}
+                                className={`w-full ${(loading || locationLoading) ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest`}
                             >
-                                {loading
+                                {locationLoading
+                                    ? <><MapPin className="h-4 w-4 animate-bounce" /> Getting Location...</>
+                                    : loading
                                     ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     : <> Send OTP <ArrowRight className="h-4 w-4" /> </>
                                 }
@@ -210,10 +258,12 @@ export default function AdminLogin() {
                             </div>
                             <button
                                 onClick={handleUserLogin}
-                                disabled={loading}
-                                className={`w-full ${loading ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest mt-2`}
+                                disabled={loading || locationLoading}
+                                className={`w-full ${(loading || locationLoading) ? 'bg-[#319795]/70 cursor-not-allowed' : 'bg-[#319795] hover:bg-[#2B7A73]'} text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest mt-2`}
                             >
-                                {loading
+                                {locationLoading
+                                    ? <><MapPin className="h-4 w-4 animate-bounce" /> Getting Location...</>
+                                    : loading
                                     ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     : <> Log In <ArrowRight className="h-4 w-4" /> </>
                                 }
