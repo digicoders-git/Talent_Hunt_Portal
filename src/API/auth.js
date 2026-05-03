@@ -1,7 +1,7 @@
 import api from "./axios";
 
-export const adminLoginApi = async ({ email }) => {
-  const { data } = await api.post("/admin/login", { email });
+export const adminLoginApi = async (payload) => {
+  const { data } = await api.post("/admin/login", payload);
   return data;
 };
 
@@ -10,8 +10,8 @@ export const verifyAdminLoginOtpApi = async ({ otp }) => {
   return data;
 };
 
-export const userLoginApi = async ({ email, password }) => {
-  const { data } = await api.post("/admin/user-login", { email, password });
+export const userLoginApi = async (payload) => {
+  const { data } = await api.post("/admin/user-login", payload);
   return data;
 };
 
