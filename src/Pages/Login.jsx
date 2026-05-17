@@ -537,10 +537,21 @@ export default function DigiCodersPortal() {
                     (y.academicYear || y) === studentYearName
                 );
                 if (!isAllowed) {
-                    const allowedNames = allowedYears.map(y => y.academicYear || y).join(', ');
+                    const notEligibleMsg = `
+                        <p style="margin-bottom:10px">This assessment is only for eligible years/courses.</p>
+                        <table style="width:100%;font-size:13px;text-align:left;border-collapse:collapse">
+                          <tr style="background:#f0fdf4"><td style="padding:6px 8px;font-weight:bold">Diploma</td><td style="padding:6px 8px">3rd Year, Passout</td></tr>
+                          <tr><td style="padding:6px 8px;font-weight:bold">B.Tech</td><td style="padding:6px 8px">3rd Year, 4th Year, Passout</td></tr>
+                          <tr style="background:#f0fdf4"><td style="padding:6px 8px;font-weight:bold">BSC IT/CS</td><td style="padding:6px 8px">3rd Year, Passout</td></tr>
+                          <tr><td style="padding:6px 8px;font-weight:bold">BCA</td><td style="padding:6px 8px">3rd Year, Passout</td></tr>
+                          <tr style="background:#f0fdf4"><td style="padding:6px 8px;font-weight:bold">MCA</td><td style="padding:6px 8px">2nd Year, Passout</td></tr>
+                          <tr><td style="padding:6px 8px;font-weight:bold">M.Tech</td><td style="padding:6px 8px">2nd Year, Passout</td></tr>
+                        </table>
+                        <p style="margin-top:10px;color:#dc2626">Your Year: <b>${studentYearName}</b></p>
+                    `;
                     Swal.fire({
                         title: '\uD83D\uDEAB This Test is Not For You!',
-                        html: `<p>This assessment is only for: <b>${allowedNames}</b></p><p>Your year: <b>${studentYearName}</b></p>`,
+                        html: notEligibleMsg,
                         icon: 'error',
                         confirmButtonColor: '#0D9488',
                         confirmButtonText: 'OK'
