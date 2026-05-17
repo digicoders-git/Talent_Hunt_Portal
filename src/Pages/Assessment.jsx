@@ -95,8 +95,9 @@ export default function Assessment() {
         fetchAssessment();
     }, [code, navigate]);
 
-    // Initial Guidance Modal
+    // Initial Guidance Modal - only show after questions are loaded
     useEffect(() => {
+        if (questions.length === 0) return;
         Swal.fire({
             title: 'Assessment Started',
             html: `
@@ -121,7 +122,7 @@ export default function Assessment() {
                 setTestStarted(true);
             }
         });
-    }, []);
+    }, [questions.length]);
 
 
     // Track Visited Questions
