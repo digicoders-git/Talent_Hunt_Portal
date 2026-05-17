@@ -673,6 +673,7 @@ export default function DigiCodersPortal() {
                 const yearObj = academicData.years.find(y => y.academicYear === formData.year);
                 localStorage.setItem('studentCourse', courseId);
                 localStorage.setItem('studentYear', yearId);
+                localStorage.setItem('studentYearName', formData.year);
 
                 Swal.fire({
                     title: 'Registration Successful!',

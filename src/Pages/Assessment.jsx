@@ -60,6 +60,27 @@ export default function Assessment() {
                 const response = await getAssessmentByCodeApi(code, studentCourse, studentYear);
 
                 if (response.success && response.data) {
+                    // Check allowedYears before proceeding
+                    const allowedYears = response.data.assesmentId?.allowedYears || [];
+                    if (allowedYears.length > 0) {
+                        const studentYearId = localStorage.getItem('studentYear') || '';
+                        const studentYearName = localStorage.getItem('studentYearName') || '';
+                        const isAllowed = allowedYears.some(y =>
+                            y._id === studentYearId || y.academicYear === studentYearName || y === studentYearId
+                        );
+                        if (!isAllowed) {
+                            const allowedNames = allowedYears.map(y => y.academicYear || y).join(', ');
+                            setLoading(false);
+                            Swal.fire({
+                                title: '\uD83D\uDEAB This Test is Not For You!',
+                                html: `<p>This assessment is only for: <b>${allowedNames}</b></p>`,
+                                icon: 'error',
+                                confirmButtonColor: '#0D9488',
+                                allowOutsideClick: false
+                            }).then(() => navigate('/'));
+                            return;
+                        }
+                    }
                     console.log('=== ASSESSMENT DEBUG ===');
                     console.log('Student Course (localStorage):', studentCourse);
                     console.log('Student Year (localStorage):', studentYear);
