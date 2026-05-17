@@ -162,8 +162,24 @@ export default function Register() {
             const response = await studentRegisterApi({ ...formData, code: enteredCode });
             if (response.success) {
                 const studentData = response.newStudent;
-                localStorage.setItem('studentCourse', academicData.courses.find(c => c.course === formData.course)?._id || formData.course);
-                localStorage.setItem('studentYear', academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year);
+                const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
+                const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
+
+                // Check if questions exist for this course+year before navigating
+                const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
+                    Swal.fire({
+                        title: 'No Questions Found!',
+                        text: 'No questions assigned for your course and year. Please contact admin.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0D9488'
+                    });
+                    setSubmitting(false);
+                    return;
+                }
+
+                localStorage.setItem('studentCourse', courseId);
+                localStorage.setItem('studentYear', yearId);
                 Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false });
                 setTimeout(() => navigate(`/assessment/${studentData.code}/${studentData._id}`), 1500);
             } else {
