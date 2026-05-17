@@ -78,10 +78,12 @@ export default function Assessment() {
             } catch (error) {
                 console.error("Assessment fetch error:", error);
                 setLoading(false);
+                const errMsg = error.response?.data?.message || error.message || 'Something went wrong.';
+                const is404 = error.response?.status === 404;
                 Swal.fire({
-                    title: 'Invalid Assessment!',
-                    text: error.message || 'The assessment code provided is invalid or has expired.',
-                    icon: 'error',
+                    title: is404 ? 'No Questions Found!' : 'Invalid Assessment!',
+                    text: errMsg,
+                    icon: is404 ? 'warning' : 'error',
                     confirmButtonColor: '#0D9488',
                     allowOutsideClick: false
                 }).then(() => {
