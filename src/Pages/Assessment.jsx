@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getAssessmentByCodeApi } from '../API/assesmentQuestions';
 import { createResultApi } from '../API/result';
+import { getSingleStudentApi } from '../API/student';
 
 export default function Assessment() {
     const [questions, setQuestions] = useState([]);
@@ -31,16 +32,31 @@ export default function Assessment() {
     const navigate = useNavigate();
     const { code, studentId } = useParams();
 
-    // Get student info from localStorage (saved during registration)
-    const studentCourse = localStorage.getItem('studentCourse') || '';
-    const studentYear = localStorage.getItem('studentYear') || '';
-
     useEffect(() => {
         const fetchAssessment = async () => {
             try {
                 if (!code) {
                     throw new Error("Assessment code missing");
                 }
+
+                // Get course/year from localStorage first, fallback to fetching student data
+                let studentCourse = localStorage.getItem('studentCourse') || '';
+                let studentYear = localStorage.getItem('studentYear') || '';
+
+                if ((!studentCourse || !studentYear) && studentId) {
+                    try {
+                        const studentRes = await getSingleStudentApi(studentId);
+                        if (studentRes.success && studentRes.student) {
+                            studentCourse = studentRes.student.course || '';
+                            studentYear = studentRes.student.year || '';
+                            localStorage.setItem('studentCourse', studentCourse);
+                            localStorage.setItem('studentYear', studentYear);
+                        }
+                    } catch (e) {
+                        // continue with empty course/year
+                    }
+                }
+
                 const response = await getAssessmentByCodeApi(code, studentCourse, studentYear);
 
                 if (response.success && response.data) {
