@@ -159,37 +159,24 @@ export default function Register() {
                 setSubmitting(false); return;
             }
 
+            // ✅ PEHLE questions check karo REGISTER se pehle
+            const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
+            const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
+            try {
+                const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
+                    Swal.fire({ title: '🚫 No Questions Found!', text: 'No questions assigned for your course and year. Please contact admin.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                    setSubmitting(false); return;
+                }
+            } catch (qErr) {
+                Swal.fire({ title: '🚫 Not Eligible!', text: qErr.response?.data?.message || 'No questions assigned for your course and year. Please contact admin.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
+            }
+
+            // ✅ Questions hain toh register karo
             const response = await studentRegisterApi({ ...formData, code: enteredCode });
             if (response.success) {
                 const studentData = response.newStudent;
-                const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
-                const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
-
-                // Check if questions exist for this course+year before navigating
-                let questionCheck;
-                try {
-                    questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
-                } catch (qErr) {
-                    Swal.fire({
-                        title: 'No Questions Found!',
-                        text: qErr.response?.data?.message || 'No questions assigned for your course and year. Please contact admin.',
-                        icon: 'warning',
-                        confirmButtonColor: '#0D9488'
-                    });
-                    setSubmitting(false);
-                    return;
-                }
-                if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
-                    Swal.fire({
-                        title: 'No Questions Found!',
-                        text: 'No questions assigned for your course and year. Please contact admin.',
-                        icon: 'warning',
-                        confirmButtonColor: '#0D9488'
-                    });
-                    setSubmitting(false);
-                    return;
-                }
-
                 localStorage.setItem('studentCourse', courseId);
                 localStorage.setItem('studentYear', yearId);
                 Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false });
