@@ -166,7 +166,19 @@ export default function Register() {
                 const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
 
                 // Check if questions exist for this course+year before navigating
-                const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                let questionCheck;
+                try {
+                    questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                } catch (qErr) {
+                    Swal.fire({
+                        title: 'No Questions Found!',
+                        text: qErr.response?.data?.message || 'No questions assigned for your course and year. Please contact admin.',
+                        icon: 'warning',
+                        confirmButtonColor: '#0D9488'
+                    });
+                    setSubmitting(false);
+                    return;
+                }
                 if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
                     Swal.fire({
                         title: 'No Questions Found!',
