@@ -531,8 +531,6 @@ export default function DigiCodersPortal() {
 
             // Check allowed years
             const allowedYears = assessmentData?.allowedYears || [];
-            console.log('[DEBUG] allowedYears:', JSON.stringify(allowedYears));
-            console.log('[DEBUG] formData.year:', formData.year);
             if (allowedYears.length > 0) {
                 const studentYearName = formData.year;
                 const isAllowed = allowedYears.some(y =>
