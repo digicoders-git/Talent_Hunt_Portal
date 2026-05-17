@@ -50,6 +50,11 @@ export default function Assessment() {
                     console.log('Total questions received:', response.data.questionIds?.length);
                     console.log('Questions:', response.data.questionIds?.map(q => q.question));
                     console.log('=======================');
+
+                    if (!response.data.questionIds || response.data.questionIds.length === 0) {
+                        throw new Error("No questions found for your course and year. Please contact admin.");
+                    }
+
                     const mappedQuestions = response.data.questionIds.map((q, idx) => ({
                         id: idx + 1,
                         _id: q._id,
