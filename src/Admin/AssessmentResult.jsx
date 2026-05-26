@@ -45,6 +45,7 @@ export default function AssessmentResult() {
     const itemsPerPage = 10;
 
     const [loading, setLoading] = useState(true);
+    const [allSubmissions, setAllSubmissions] = useState([]);
     const [tableLoading, setTableLoading] = useState(false);
     const [firstSubmissions, setFirstSubmissions] = useState([]);
     const [secondSubmissions, setSecondSubmissions] = useState([]);
@@ -166,11 +167,31 @@ export default function AssessmentResult() {
         return fetchResultsWithParams(page, searchQuery, filters);
     };
 
+    const fetchAllSubmissions = async () => {
+        try {
+            const response = await getResultsByAssessmentIdApi(id, {
+                page: 1,
+                limit: 10000
+            });
+            if (response.success && response.firstSubmission) {
+                const formatted = response.firstSubmission.map(res => ({
+                    college: res.student?.college || "N/A",
+                    course: res.student?.course || "N/A",
+                    year: res.student?.year || "N/A",
+                }));
+                setAllSubmissions(formatted);
+            }
+        } catch (error) {
+            console.error("Failed to fetch all submissions for filters:", error);
+        }
+    };
+
     useEffect(() => {
         const initialFetch = async () => {
             setLoading(true);
             await fetchResults(1);
             await fetchUserRole();
+            await fetchAllSubmissions();
             setLoading(false);
         };
         initialFetch();
@@ -227,40 +248,72 @@ export default function AssessmentResult() {
         fetchResults(1);
     };
 
-    const handleTopResultsSubmit = () => {
+    const handleTopResultsSubmit = async () => {
         if (!topFilters.limit || parseInt(topFilters.limit) <= 0) {
             toast.error('Please enter a valid number');
             return;
         }
 
-        const currentData = firstSubmissions;
-        let filtered = [...currentData];
+        const toastId = toast.loading("Fetching top results...");
+        try {
+            const response = await getResultsByAssessmentIdApi(id, {
+                page: 1,
+                limit: parseInt(topFilters.limit),
+                college: topFilters.college,
+                year: topFilters.year,
+                course: topFilters.course
+            });
 
-        if (topFilters.college) {
-            filtered = filtered.filter(s => s.college === topFilters.college);
-        }
-        if (topFilters.year) {
-            filtered = filtered.filter(s => s.year === topFilters.year);
-        }
-        if (topFilters.course) {
-            filtered = filtered.filter(s => s.course === topFilters.course);
-        }
+            if (response.success) {
+                const formatData = (list, submissionType) => list.map(res => ({
+                    id: res._id,
+                    studentId: res.student?._id,
+                    name: res.student?.name || "N/A",
+                    phone: res.student?.mobile || "N/A",
+                    email: res.student?.email || "N/A",
+                    course: res.student?.course || "N/A",
+                    year: res.student?.year || "N/A",
+                    college: res.student?.college || "N/A",
+                    marks: `${res.marks || 0}/${res.total || 0}`,
+                    time: res.createdAt ? new Date(res.createdAt).toLocaleString() : "N/A",
+                    duration: res.duration || "N/A",
+                    refNo: res.student?.code || "N/A",
+                    rank: res.rank || "N/A",
+                    submission: submissionType
+                }));
 
-        const sorted = filtered.sort((a, b) => {
-            const marksA = parseInt(a.marks.split('/')[0]);
-            const marksB = parseInt(b.marks.split('/')[0]);
-            return marksB - marksA;
-        });
-
-        const limited = sorted.slice(0, parseInt(topFilters.limit));
-        setTopResultsData(limited);
-        setIsTopResultsModalOpen(false);
-        setIsTopResultsViewOpen(true);
+                const formatted = formatData(response.firstSubmission || [], 1);
+                setTopResultsData(formatted);
+                setIsTopResultsModalOpen(false);
+                setIsTopResultsViewOpen(true);
+                toast.update(toastId, {
+                    render: "Top results loaded!",
+                    type: "success",
+                    isLoading: false,
+                    autoClose: 2000
+                });
+            } else {
+                toast.update(toastId, {
+                    render: response.message || "Failed to fetch top results",
+                    type: "error",
+                    isLoading: false,
+                    autoClose: 3000
+                });
+            }
+        } catch (error) {
+            console.error("Top Results Error:", error);
+            toast.update(toastId, {
+                render: "Failed to fetch top results",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000
+            });
+        }
     };
 
     const getUniqueValues = (field) => {
         const values = new Set();
-        firstSubmissions.forEach(item => {
+        allSubmissions.forEach(item => {
             if (item[field] && item[field] !== 'N/A') values.add(item[field]);
         });
         return Array.from(values).sort();
