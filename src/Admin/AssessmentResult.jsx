@@ -403,7 +403,6 @@ export default function AssessmentResult() {
                             <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">YEAR</th>
                             <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COLLEGE</th>
                             <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">SCORE</th>
-                            <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">DURATION</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -420,7 +419,6 @@ export default function AssessmentResult() {
                                 <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
                                 <td style="padding:12px 10px;border:1px solid #e5e7eb;color:#475569;font-weight:500;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
                                 <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:extrabold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
-                                <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -949,7 +947,6 @@ export default function AssessmentResult() {
                                         <th className="px-4 py-3 min-w-[120px] text-xs uppercase tracking-wider">Phone</th>
                                         <th className="px-4 py-3 min-w-[180px] text-xs uppercase tracking-wider">College</th>
                                         <th className="px-4 py-3 text-center min-w-[90px] text-xs uppercase tracking-wider">Score</th>
-                                        <th className="px-4 py-3 text-center min-w-[100px] text-xs uppercase tracking-wider">Duration</th>
                                         <th className="px-4 py-3 min-w-[150px] text-xs uppercase tracking-wider">Date/Time</th>
                                         <th className="px-4 py-3 text-center min-w-[70px] text-xs uppercase tracking-wider">Action</th>
                                     </tr>
@@ -1034,9 +1031,6 @@ export default function AssessmentResult() {
                                                 <span className="bg-orange-50 text-orange-700 font-extrabold px-3 py-1 rounded-lg text-sm border border-orange-200 shadow-sm">
                                                     {item.marks}
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-center text-gray-600 font-bold text-xs uppercase">
-                                                {item.duration}
                                             </td>
                                             <td className="px-4 py-3 text-gray-500 font-medium text-xs">
                                                 {item.time}
@@ -1376,7 +1370,6 @@ export default function AssessmentResult() {
                                                         <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">YEAR</th>
                                                         <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COLLEGE</th>
                                                         <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">SCORE</th>
-                                                        <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">DURATION</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1393,7 +1386,6 @@ export default function AssessmentResult() {
                                                             <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
                                                             <td style="padding:12px 10px;border:1px solid #e5e7eb;color:#475569;font-weight:500;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
                                                             <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:extrabold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
-                                                            <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
                                                         </tr>
                                                     `).join('')}
                                                 </tbody>
@@ -1495,7 +1487,6 @@ export default function AssessmentResult() {
                                                             <th className="px-4 py-3.5 text-center min-w-[85px]">Year</th>
                                                             <th className="px-4 py-3.5 min-w-[180px]">College</th>
                                                             <th className="px-4 py-3.5 text-center min-w-[95px]">Score</th>
-                                                            <th className="px-4 py-3.5 text-center min-w-[100px]">Duration</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -1532,9 +1523,6 @@ export default function AssessmentResult() {
                                                                     <span className="bg-teal-50 text-teal-700 font-extrabold px-3 py-1 rounded-lg text-sm border border-teal-200 shadow-sm">
                                                                         {item.marks}
                                                                     </span>
-                                                                </td>
-                                                                <td className="px-4 py-3.5 text-center text-gray-600 font-bold text-xs uppercase">
-                                                                    {item.duration}
                                                                 </td>
                                                             </tr>
                                                         ))}
