@@ -73,11 +73,11 @@ export default function AssessmentResult() {
     // Top Results states
     const [isTopResultsModalOpen, setIsTopResultsModalOpen] = useState(false);
     const [isTopResultsViewOpen, setIsTopResultsViewOpen] = useState(false);
-    const [topResultsData, setTopResultsData] = useState([]);
+    const [topResultsData, setTopResultsData] = useState({});
     const [topFilters, setTopFilters] = useState({
         college: '',
-        year: '',
-        course: '',
+        year: [],
+        course: [],
         limit: '10'
     });
     const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
@@ -258,10 +258,10 @@ export default function AssessmentResult() {
         try {
             const response = await getResultsByAssessmentIdApi(id, {
                 page: 1,
-                limit: parseInt(topFilters.limit),
+                limit: 10000,
                 college: topFilters.college,
-                year: topFilters.year,
-                course: topFilters.course
+                year: topFilters.year.length > 0 ? topFilters.year.join(',') : '',
+                course: topFilters.course.length > 0 ? topFilters.course.join(',') : ''
             });
 
             if (response.success) {
@@ -283,7 +283,68 @@ export default function AssessmentResult() {
                 }));
 
                 const formatted = formatData(response.firstSubmission || [], 1);
-                setTopResultsData(formatted);
+                
+                // Segment/Group data by Course and Year
+                const targetCourses = topFilters.course.length > 0 ? topFilters.course : ['All Courses'];
+                const targetYears = topFilters.year.length > 0 ? topFilters.year : ['All Years'];
+
+                const groupedData = {};
+                targetCourses.forEach(c => {
+                    targetYears.forEach(y => {
+                        const groupKey = `${c} - ${y}`;
+                        groupedData[groupKey] = [];
+                    });
+                });
+
+                formatted.forEach(item => {
+                    const matchedCourses = targetCourses.filter(tc => 
+                        tc === 'All Courses' || (item.course && item.course.toLowerCase().trim() === tc.toLowerCase().trim())
+                    );
+                    const matchedYears = targetYears.filter(ty => 
+                        ty === 'All Years' || (item.year && item.year.toLowerCase().trim() === ty.toLowerCase().trim())
+                    );
+
+                    matchedCourses.forEach(mc => {
+                        matchedYears.forEach(my => {
+                            const groupKey = `${mc} - ${my}`;
+                            if (groupedData[groupKey]) {
+                                groupedData[groupKey].push(item);
+                            }
+                        });
+                    });
+                });
+
+                const finalGroupedResults = {};
+                const limitNum = parseInt(topFilters.limit) || 10;
+
+                Object.keys(groupedData).forEach(groupKey => {
+                    const students = groupedData[groupKey];
+                    
+                    students.sort((a, b) => {
+                        const getScore = (m) => {
+                            if (!m) return 0;
+                            const parts = m.split('/');
+                            return parseFloat(parts[0]) || 0;
+                        };
+                        const scoreA = getScore(a.marks);
+                        const scoreB = getScore(b.marks);
+                        if (scoreB !== scoreA) {
+                            return scoreB - scoreA;
+                        }
+                        const getSeconds = (d) => {
+                            if (!d || d === 'N/A') return 999999;
+                            const parts = d.split(':').map(Number);
+                            if (parts.length === 2) return parts[0] * 60 + parts[1];
+                            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+                            return Number(d) || 999999;
+                        };
+                        return getSeconds(a.duration) - getSeconds(b.duration);
+                    });
+
+                    finalGroupedResults[groupKey] = students.slice(0, limitNum);
+                });
+
+                setTopResultsData(finalGroupedResults);
                 setIsTopResultsModalOpen(false);
                 setIsTopResultsViewOpen(true);
                 toast.update(toastId, {
@@ -304,6 +365,98 @@ export default function AssessmentResult() {
             console.error("Top Results Error:", error);
             toast.update(toastId, {
                 render: "Failed to fetch top results",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000
+            });
+        }
+    };
+
+    const downloadSingleGroupImage = async (groupKey) => {
+        const groupStudents = topResultsData[groupKey] || [];
+        if (groupStudents.length === 0) {
+            toast.error("No results to download");
+            return;
+        }
+
+        const toastId = toast.loading(`Generating download for ${groupKey}...`);
+        try {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'position:absolute;left:-9999px;background:#fff;padding:25px;width:1200px;';
+
+            wrapper.innerHTML = `
+                <div style="background:linear-gradient(135deg, #0d9488, #14b8a6);color:#fff;padding:25px;border-radius:12px 12px 0 0;font-family:sans-serif;box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h2 style="font-size:26px;font-weight:800;margin:0;letter-spacing:0.5px;">🏆 Top Results</h2>
+                    <p style="margin:5px 0 0 0; opacity:0.9; font-size:14px;">Generated on ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div style="background:#E6FFFA;padding:16px;border-bottom:3px solid #B2F5EA;font-family:sans-serif;display:flex;gap:15px;align-items:center;">
+                    <span style="font-weight:800;color:#115e59;font-size:13px;text-transform:uppercase;">Group:</span>
+                    <span style="background:#fff;padding:6px 12px;border-radius:8px;color:#0f766e;font-weight:bold;font-size:12px;border:1px solid #B2F5EA;">${groupKey}</span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;margin-top:25px;font-family:sans-serif;box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden;">
+                    <thead style="background:#E6FFFA;">
+                        <tr>
+                            <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">RANK</th>
+                            <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">STUDENT NAME</th>
+                            <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">REF CODE</th>
+                            <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COURSE</th>
+                            <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">YEAR</th>
+                            <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COLLEGE</th>
+                            <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">SCORE</th>
+                            <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">DURATION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${groupStudents.map((item, index) => `
+                            <tr style="background:${index % 2 === 0 ? '#fff' : '#f9fafb'};">
+                                <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;">
+                                    <div style="display:flex;align-items:center;justify-content:center;height:100%;">
+                                        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:${index === 0 ? '#fef3c7' : index === 1 ? '#f3f4f6' : index === 2 ? '#fed7aa' : '#f0fdfa'};color:${index === 0 ? '#92400e' : index === 1 ? '#374151' : index === 2 ? '#9a3412' : '#0f766e'};font-weight:bold;">${index + 1}</span>
+                                    </div>
+                                </td>
+                                <td style="padding:12px 10px;border:1px solid #e5e7eb;font-weight:bold;color:#1e293b;"><div style="display:flex;align-items:center;height:100%;">${item.name}</div></td>
+                                <td style="padding:12px 10px;border:1px solid #e5e7eb;font-family:monospace;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;height:100%;">${item.refNo}</div></td>
+                                <td style="padding:12px 10px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;"><span style="background:#dbeafe;color:#1e40af;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;text-transform:uppercase;">${item.course}</span></div></td>
+                                <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
+                                <td style="padding:12px 10px;border:1px solid #e5e7eb;color:#475569;font-weight:500;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
+                                <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:extrabold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
+                                <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="text-align:center;padding:15px 0;margin-top:20px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:11px;font-family:sans-serif;font-weight:600;">
+                    Assessment Portal • All Rights Reserved
+                </div>
+            `;
+
+            document.body.appendChild(wrapper);
+
+            const canvas = await html2canvas(wrapper, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true
+            });
+            document.body.removeChild(wrapper);
+
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Top_Results_${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getTime()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.update(toastId, {
+                    render: `${groupKey} downloaded successfully!`,
+                    type: "success",
+                    isLoading: false,
+                    autoClose: 2000
+                });
+            });
+        } catch (error) {
+            console.error('Download error:', error);
+            toast.update(toastId, {
+                render: "Failed to download image",
                 type: "error",
                 isLoading: false,
                 autoClose: 3000
@@ -1081,35 +1234,44 @@ export default function AssessmentResult() {
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Year (Optional)</label>
                                 <div className="relative" ref={yearDropdownRef}>
                                     <button
+                                        type="button"
                                         onClick={() => setShowYearDropdown(!showYearDropdown)}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-left focus:outline-none focus:border-[#319795] transition-colors bg-white text-xs sm:text-sm flex items-center justify-between"
                                     >
-                                        <span className="truncate">{topFilters.year || 'All Years'}</span>
+                                        <span className="truncate">
+                                            {topFilters.year.length > 0 ? topFilters.year.join(', ') : 'All Years'}
+                                        </span>
                                         <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                     </button>
                                     {showYearDropdown && (
                                         <div className="custom-scrollbar absolute z-20 w-full bg-white shadow-xl border border-gray-200 rounded-lg mt-1 max-h-60 overflow-y-auto">
                                             <div
                                                 onClick={() => {
-                                                    setTopFilters({...topFilters, year: ''});
-                                                    setShowYearDropdown(false);
+                                                    setTopFilters({...topFilters, year: []});
                                                 }}
-                                                className="px-4 py-2.5 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-xs sm:text-sm border-b font-medium text-gray-600"
+                                                className="px-4 py-2.5 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-xs sm:text-sm border-b font-bold text-gray-700 flex items-center justify-between"
                                             >
-                                                All Years
+                                                <span>All Years</span>
+                                                {topFilters.year.length === 0 && <span className="text-teal-600 font-bold">✓</span>}
                                             </div>
-                                            {getUniqueValues('year').map((y) => (
-                                                <div
-                                                    key={y}
-                                                    onClick={() => {
-                                                        setTopFilters({...topFilters, year: y});
-                                                        setShowYearDropdown(false);
-                                                    }}
-                                                    className="px-4 py-2.5 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-xs sm:text-sm text-gray-700 border-b border-gray-50 last:border-0 break-words"
-                                                >
-                                                    {y}
-                                                </div>
-                                            ))}
+                                            {getUniqueValues('year').map((y) => {
+                                                const isSelected = topFilters.year.includes(y);
+                                                return (
+                                                    <div
+                                                        key={y}
+                                                        onClick={() => {
+                                                            const newYears = isSelected
+                                                                ? topFilters.year.filter(val => val !== y)
+                                                                : [...topFilters.year, y];
+                                                            setTopFilters({...topFilters, year: newYears});
+                                                        }}
+                                                        className="px-4 py-2.5 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-xs sm:text-sm text-gray-700 border-b border-gray-50 last:border-0 break-words flex items-center justify-between font-medium"
+                                                    >
+                                                        <span>{y}</span>
+                                                        {isSelected && <span className="text-teal-600 font-bold">✓</span>}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -1167,142 +1329,221 @@ export default function AssessmentResult() {
             {/* Top Results View Modal */}
             {isTopResultsViewOpen && (
                 <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div id="top-results-modal" className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+                    <div id="top-results-modal" className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in duration-200">
                         <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
-                            <h3 className="font-bold text-lg flex items-center gap-2"><Trophy className="h-5 w-5" /> Top {topResultsData.length} Results</h3>
-                            <button onClick={() => setIsTopResultsViewOpen(false)} className="text-white/80 hover:text-white"><X className="h-6 w-6" /></button>
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Trophy className="h-5 w-5 animate-bounce text-yellow-300 fill-yellow-300" /> 
+                                Top Segmented Results
+                            </h3>
+                            <button onClick={() => setIsTopResultsViewOpen(false)} className="text-white/80 hover:text-white">
+                                <X className="h-6 w-6" />
+                            </button>
                         </div>
                         <div className="bg-[#E6FFFA] px-6 py-3 border-b border-[#B2F5EA] flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 text-sm flex-shrink-0">
                             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <span className="font-bold text-teal-800">Filters:</span>
-                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm">College: {topFilters.college || 'All'}</span>
-                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm">Year: {topFilters.year || 'All'}</span>
-                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm">Course: {topFilters.course || 'All'}</span>
+                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm shadow-sm border border-teal-100">
+                                    College: {topFilters.college || 'All'}
+                                </span>
+                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm shadow-sm border border-teal-100">
+                                    Year: {topFilters.year.length > 0 ? topFilters.year.join(', ') : 'All'}
+                                </span>
+                                <span className="bg-white px-3 py-1 rounded-lg text-teal-700 font-semibold text-xs sm:text-sm shadow-sm border border-teal-100">
+                                    Course: {topFilters.course.length > 0 ? topFilters.course.join(', ') : 'All'}
+                                </span>
                             </div>
-                            <button onClick={async () => {
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'position:absolute;left:-9999px;background:#fff;padding:20px;width:1200px;';
-                                
-                                wrapper.innerHTML = `
-                                    <div style="background:#14b8a6;color:#fff;padding:20px;border-radius:10px 10px 0 0;">
-                                        <h2 style="font-size:24px;font-weight:bold;margin:0;">🏆 Top ${topResultsData.length} Results</h2>
-                                    </div>
-                                    <div style="background:#E6FFFA;padding:15px;border-bottom:2px solid #B2F5EA;">
-                                        <span style="font-weight:bold;color:#115e59;">Filters: </span>
-                                        <span style="background:#fff;padding:8px 12px;border-radius:8px;color:#0f766e;font-weight:600;margin:0 5px;">College: ${topFilters.college || 'All'}</span>
-                                        <span style="background:#fff;padding:8px 12px;border-radius:8px;color:#0f766e;font-weight:600;margin:0 5px;">Year: ${topFilters.year || 'All'}</span>
-                                        <span style="background:#fff;padding:8px 12px;border-radius:8px;color:#0f766e;font-weight:600;margin:0 5px;">Course: ${topFilters.course || 'All'}</span>
-                                    </div>
-                                    <table style="width:100%;border-collapse:collapse;">
-                                        <thead style="background:#E6FFFA;">
-                                            <tr>
-                                                <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">RANK</th>
-                                                <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">STUDENT NAME</th>
-                                                <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">REF CODE</th>
-                                                <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">COURSE</th>
-                                                <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">YEAR</th>
-                                                <th style="padding:12px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">COLLEGE</th>
-                                                <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">SCORE</th>
-                                                <th style="padding:12px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;">DURATION</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${topResultsData.map((item, index) => `
-                                                <tr style="background:${index % 2 === 0 ? '#fff' : '#f9fafb'};">
-                                                    <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;">
-                                                        <div style="display:flex;align-items:center;justify-content:center;height:100%;">
-                                                            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:${index === 0 ? '#fef3c7' : index === 1 ? '#f3f4f6' : index === 2 ? '#fed7aa' : '#f0fdfa'};color:${index === 0 ? '#92400e' : index === 1 ? '#374151' : index === 2 ? '#9a3412' : '#0f766e'};font-weight:bold;">${index + 1}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td style="padding:12px;border:1px solid #e5e7eb;font-weight:bold;"><div style="display:flex;align-items:center;height:100%;">${item.name}</div></td>
-                                                    <td style="padding:12px;border:1px solid #e5e7eb;font-family:monospace;font-size:11px;"><div style="display:flex;align-items:center;height:100%;">${item.refNo}</div></td>
-                                                    <td style="padding:12px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;"><span style="background:#dbeafe;color:#1e40af;padding:6px 10px;border-radius:4px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.course}</span></div></td>
-                                                    <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:4px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
-                                                    <td style="padding:12px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
-                                                    <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
-                                                    <td style="padding:12px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                `;
-                                
-                                document.body.appendChild(wrapper);
-                                
-                                try {
-                                    const canvas = await html2canvas(wrapper, {
-                                        scale: 2,
-                                        backgroundColor: '#ffffff'
-                                    });
-                                    document.body.removeChild(wrapper);
+                            <button 
+                                onClick={async () => {
+                                    const wrapper = document.createElement('div');
+                                    wrapper.style.cssText = 'position:absolute;left:-9999px;background:#fff;padding:25px;width:1200px;';
                                     
-                                    canvas.toBlob(blob => {
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `Top_Results_${new Date().getTime()}.png`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                        toast.success('Downloaded successfully!');
+                                    let groupsHTML = '';
+                                    Object.keys(topResultsData).forEach(groupKey => {
+                                        const groupStudents = topResultsData[groupKey] || [];
+                                        if (groupStudents.length === 0) return;
+                                        
+                                        groupsHTML += `
+                                            <div style="margin-top: 30px; margin-bottom: 12px; border-bottom: 3px solid #14b8a6; padding-bottom: 8px;">
+                                                <h3 style="font-size: 20px; font-weight: 800; color: #0f766e; margin: 0; text-transform: uppercase; font-family: sans-serif; letter-spacing: 0.5px;">🏆 ${groupKey} (Top ${groupStudents.length})</h3>
+                                            </div>
+                                            <table style="width:100%;border-collapse:collapse;margin-bottom:25px;font-family:sans-serif;box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden;">
+                                                <thead style="background:#E6FFFA;">
+                                                    <tr>
+                                                        <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">RANK</th>
+                                                        <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">STUDENT NAME</th>
+                                                        <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">REF CODE</th>
+                                                        <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COURSE</th>
+                                                        <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">YEAR</th>
+                                                        <th style="padding:14px 10px;text-align:left;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">COLLEGE</th>
+                                                        <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">SCORE</th>
+                                                        <th style="padding:14px 10px;text-align:center;border:1px solid #B2F5EA;font-size:11px;font-weight:bold;vertical-align:middle;color:#0f766e;text-transform:uppercase;">DURATION</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${groupStudents.map((item, index) => `
+                                                        <tr style="background:${index % 2 === 0 ? '#fff' : '#f9fafb'};">
+                                                            <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;">
+                                                                <div style="display:flex;align-items:center;justify-content:center;height:100%;">
+                                                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:${index === 0 ? '#fef3c7' : index === 1 ? '#f3f4f6' : index === 2 ? '#fed7aa' : '#f0fdfa'};color:${index === 0 ? '#92400e' : index === 1 ? '#374151' : index === 2 ? '#9a3412' : '#0f766e'};font-weight:bold;">${index + 1}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td style="padding:12px 10px;border:1px solid #e5e7eb;font-weight:bold;color:#1e293b;"><div style="display:flex;align-items:center;height:100%;">${item.name}</div></td>
+                                                            <td style="padding:12px 10px;border:1px solid #e5e7eb;font-family:monospace;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;height:100%;">${item.refNo}</div></td>
+                                                            <td style="padding:12px 10px;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;height:100%;"><span style="background:#dbeafe;color:#1e40af;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;text-transform:uppercase;">${item.course}</span></div></td>
+                                                            <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#f3e8ff;color:#6b21a8;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;">${item.year}</span></div></td>
+                                                            <td style="padding:12px 10px;border:1px solid #e5e7eb;color:#475569;font-weight:500;"><div style="display:flex;align-items:center;height:100%;">${item.college}</div></td>
+                                                            <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;"><div style="display:flex;align-items:center;justify-content:center;height:100%;"><span style="background:#ccfbf1;color:#0f766e;padding:6px 12px;border-radius:8px;font-weight:extrabold;display:inline-flex;align-items:center;justify-content:center;">${item.marks}</span></div></td>
+                                                            <td style="padding:12px 10px;text-align:center;border:1px solid #e5e7eb;font-weight:bold;font-size:11px;color:#475569;"><div style="display:flex;align-items:center;justify-content:center;height:100%;">${item.duration}</div></td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        `;
                                     });
-                                } catch (error) {
-                                    if (wrapper.parentNode) document.body.removeChild(wrapper);
-                                    console.error('Download error:', error);
-                                    toast.error('Failed to download');
-                                }
-                            }} className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-sm">
-                                <Download className="h-4 w-4" /> Download
+
+                                    wrapper.innerHTML = `
+                                        <div style="background:linear-gradient(135deg, #0d9488, #14b8a6);color:#fff;padding:25px;border-radius:12px 12px 0 0;font-family:sans-serif;box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                                            <h2 style="font-size:26px;font-weight:800;margin:0;letter-spacing:0.5px;">🏆 Top Results Report</h2>
+                                            <p style="margin:5px 0 0 0; opacity:0.9; font-size:14px;">Generated on ${new Date().toLocaleDateString()}</p>
+                                        </div>
+                                        <div style="background:#E6FFFA;padding:16px;border-bottom:3px solid #B2F5EA;font-family:sans-serif;display:flex;gap:15px;align-items:center;">
+                                            <span style="font-weight:800;color:#115e59;font-size:13px;text-transform:uppercase;">Filters Applied:</span>
+                                            <span style="background:#fff;padding:6px 12px;border-radius:8px;color:#0f766e;font-weight:bold;font-size:12px;border:1px solid #B2F5EA;">College: ${topFilters.college || 'All'}</span>
+                                            <span style="background:#fff;padding:6px 12px;border-radius:8px;color:#0f766e;font-weight:bold;font-size:12px;border:1px solid #B2F5EA;">Year: ${topFilters.year.length > 0 ? topFilters.year.join(', ') : 'All'}</span>
+                                            <span style="background:#fff;padding:6px 12px;border-radius:8px;color:#0f766e;font-weight:bold;font-size:12px;border:1px solid #B2F5EA;">Course: ${topFilters.course.length > 0 ? topFilters.course.join(', ') : 'All'}</span>
+                                        </div>
+                                        ${groupsHTML}
+                                        <div style="text-align:center;padding:15px 0;margin-top:20px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:11px;font-family:sans-serif;font-weight:600;">
+                                            Assessment Portal • All Rights Reserved
+                                        </div>
+                                    `;
+                                    
+                                    document.body.appendChild(wrapper);
+                                    
+                                    try {
+                                        const canvas = await html2canvas(wrapper, {
+                                            scale: 2,
+                                            backgroundColor: '#ffffff',
+                                            useCORS: true
+                                        });
+                                        document.body.removeChild(wrapper);
+                                        
+                                        canvas.toBlob(blob => {
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `Top_Results_${new Date().getTime()}.png`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                            toast.success('Downloaded successfully!');
+                                        });
+                                    } catch (error) {
+                                        if (wrapper.parentNode) document.body.removeChild(wrapper);
+                                        console.error('Download error:', error);
+                                        toast.error('Failed to download');
+                                    }
+                                }} 
+                                className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-sm active:scale-95"
+                            >
+                                <Download className="h-4 w-4" /> Download Report
                             </button>
                         </div>
-                        <div className="flex-1 overflow-auto p-6">
-                            {topResultsData.length === 0 ? (
-                                <div className="flex items-center justify-center py-20">
+                        
+                        <div className="flex-1 overflow-auto p-6 bg-slate-50/50 space-y-8">
+                            {Object.keys(topResultsData).length === 0 || Object.values(topResultsData).every(arr => arr.length === 0) ? (
+                                <div className="flex items-center justify-center py-20 bg-white border border-gray-150 rounded-2xl">
                                     <div className="text-center">
-                                        <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Results Found</h3>
-                                        <p className="text-gray-500">No matching results for the selected filters.</p>
+                                        <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-lg font-bold text-gray-700 mb-2">No Results Found</h3>
+                                        <p className="text-gray-400 text-sm font-medium">No matching results for the selected combination.</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-[#E6FFFA] text-gray-700 font-bold border-b-2 border-[#B2F5EA]">
-                                            <tr>
-                                                <th className="px-4 py-3 text-center text-xs uppercase">Rank</th>
-                                                <th className="px-4 py-3 text-xs uppercase">Student Name</th>
-                                                <th className="px-4 py-3 text-xs uppercase">Ref Code</th>
-                                                <th className="px-4 py-3 text-xs uppercase">Course</th>
-                                                <th className="px-4 py-3 text-center text-xs uppercase">Year</th>
-                                                <th className="px-4 py-3 text-xs uppercase">College</th>
-                                                <th className="px-4 py-3 text-center text-xs uppercase">Score</th>
-                                                <th className="px-4 py-3 text-center text-xs uppercase">Duration</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100 bg-white">
-                                            {topResultsData.map((item, index) => (
-                                                <tr key={item.id} className="hover:bg-[#E6FFFA]/30 transition-colors">
-                                                    <td className="px-4 py-3 text-center">
-                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                                                            index === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
-                                                            index === 1 ? 'bg-gray-100 text-gray-700 ring-2 ring-gray-300' :
-                                                            index === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-300' :
-                                                            'bg-teal-50 text-teal-700'
-                                                        }`}>
-                                                            {index + 1}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-bold text-gray-900">{item.name}</td>
-                                                    <td className="px-4 py-3 text-gray-600 font-mono text-xs font-semibold">{item.refNo}</td>
-                                                    <td className="px-4 py-3"><span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-xs font-bold border border-blue-100 uppercase">{item.course}</span></td>
-                                                    <td className="px-4 py-3 text-center"><span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded text-xs font-bold border border-purple-100">{item.year}</span></td>
-                                                    <td className="px-4 py-3"><div className="truncate max-w-[200px] text-gray-600 font-medium" title={item.college}>{item.college}</div></td>
-                                                    <td className="px-4 py-3 text-center"><span className="bg-teal-50 text-teal-700 font-extrabold px-3 py-1 rounded-lg text-sm border border-teal-200 shadow-sm">{item.marks}</span></td>
-                                                    <td className="px-4 py-3 text-center text-gray-600 font-bold text-xs uppercase">{item.duration}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                Object.keys(topResultsData).map(groupKey => {
+                                    const groupStudents = topResultsData[groupKey] || [];
+                                    if (groupStudents.length === 0) return null;
+
+                                    const cardId = `group-card-${groupKey.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                                    return (
+                                        <div key={groupKey} id={cardId} className="border border-teal-100 rounded-2xl overflow-hidden shadow-sm bg-white transition-all hover:shadow-md">
+                                            <div className="bg-gradient-to-r from-teal-50/70 to-[#E6FFFA]/50 px-5 py-3.5 border-b border-teal-100 flex items-center justify-between">
+                                                <span className="font-extrabold text-teal-800 tracking-wide text-sm flex items-center gap-2 uppercase">
+                                                    <Trophy className="h-4.5 w-4.5 text-amber-500 fill-amber-400" />
+                                                    {groupKey}
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-teal-600 text-white font-extrabold text-xs px-3 py-1.5 rounded-full shadow-sm">
+                                                        Top {groupStudents.length} Students
+                                                    </span>
+                                                    <button
+                                                        onClick={() => downloadSingleGroupImage(groupKey)}
+                                                        data-html2canvas-ignore="true"
+                                                        className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5" /> Download Image
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm text-left">
+                                                    <thead className="bg-[#f8fafc] text-gray-600 font-bold border-b border-gray-200 text-xs uppercase tracking-wider">
+                                                        <tr>
+                                                            <th className="px-4 py-3.5 text-center min-w-[60px]">Rank</th>
+                                                            <th className="px-4 py-3.5 min-w-[160px]">Student Name</th>
+                                                            <th className="px-4 py-3.5 min-w-[120px]">Ref Code</th>
+                                                            <th className="px-4 py-3.5 min-w-[120px]">Course</th>
+                                                            <th className="px-4 py-3.5 text-center min-w-[85px]">Year</th>
+                                                            <th className="px-4 py-3.5 min-w-[180px]">College</th>
+                                                            <th className="px-4 py-3.5 text-center min-w-[95px]">Score</th>
+                                                            <th className="px-4 py-3.5 text-center min-w-[100px]">Duration</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                                        {groupStudents.map((item, index) => (
+                                                            <tr key={item.id} className="hover:bg-teal-50/20 transition-colors">
+                                                                <td className="px-4 py-3.5 text-center">
+                                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-extrabold ${
+                                                                        index === 0 ? 'bg-yellow-100 text-yellow-700 ring-2 ring-yellow-300' :
+                                                                        index === 1 ? 'bg-slate-100 text-slate-700 ring-2 ring-slate-200' :
+                                                                        index === 2 ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-200' :
+                                                                        'bg-teal-50 text-teal-700'
+                                                                    }`}>
+                                                                        {index + 1}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3.5 font-bold text-gray-900">{item.name}</td>
+                                                                <td className="px-4 py-3.5 text-gray-600 font-mono text-xs font-semibold">{item.refNo}</td>
+                                                                <td className="px-4 py-3.5">
+                                                                    <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold border border-blue-100 uppercase">
+                                                                        {item.course}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3.5 text-center">
+                                                                    <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md text-xs font-bold border border-purple-100">
+                                                                        {item.year}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3.5">
+                                                                    <div className="truncate max-w-[200px] text-gray-600 font-medium" title={item.college}>
+                                                                        {item.college}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3.5 text-center">
+                                                                    <span className="bg-teal-50 text-teal-700 font-extrabold px-3 py-1 rounded-lg text-sm border border-teal-200 shadow-sm">
+                                                                        {item.marks}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3.5 text-center text-gray-600 font-bold text-xs uppercase">
+                                                                    {item.duration}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                     </div>
