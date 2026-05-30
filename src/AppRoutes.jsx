@@ -24,6 +24,7 @@ import { SecuritySettings } from "./Admin/SecuritySettings";
 import { ManageCertificate } from "./Admin/ManageCertificate";
 import LastYearData from "./Admin/LastYearData";
 import CreateAdmin from "./Admin/CreateAdmin";
+import ManageStatuses from "./Admin/ManageStatuses";
 
 const AppRoutes = () => {
   return (
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="security" element={<SecuritySettings />} />
         <Route path="last-year-data" element={<LastYearData />} />
         <Route path="create-admin" element={<CreateAdmin />} />
+        <Route path="statuses" element={<ManageStatuses />} />
         <Route path="topic-questions/:topicId" element={<TopicQuestions />} />
         <Route path="assessment/result/:id" element={<AssessmentResult />} />
         <Route path="assessment/details/:id" element={<AssessmentDetails />} />

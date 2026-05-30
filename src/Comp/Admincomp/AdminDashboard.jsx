@@ -14,7 +14,8 @@ import {
     User,
     LogOut,
     Database,
-    UserPlus
+    UserPlus,
+    Tag
 } from 'lucide-react';
 
 import { getAdminApi } from '../../API/admin';
@@ -90,6 +91,7 @@ export default function AdminDashboard() {
     const allMenuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin', roles: ['admin'] },
         { id: 'create-admin', label: 'Create User', icon: UserPlus, path: '/admin/create-admin', roles: ['admin'] },
+        { id: 'statuses', label: 'Manage Statuses', icon: Tag, path: '/admin/statuses', roles: ['admin'] },
         { id: 'topics', label: 'Manage Topics', icon: BookOpen, path: '/admin/topics', roles: ['admin'] },
         { id: 'assessment', label: 'Active Assessment', icon: Clock, path: '/admin/assessment', roles: ['admin'] },
         { id: 'history', label: 'Assessment History', icon: History, path: '/admin/history', roles: ['admin'] },
