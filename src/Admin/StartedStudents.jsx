@@ -49,7 +49,7 @@ export default function StartedStudents() {
                 course: filters.course,
                 year: filters.year
             });
-            console.log(response);
+            // console.log(response);
 
             if (response.success) {
                 const studentsList = response.students || [];

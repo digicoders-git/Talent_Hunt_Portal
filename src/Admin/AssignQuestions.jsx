@@ -127,7 +127,7 @@ export default function AssignQuestions() {
             const response = await getAssessmentByCodeApi(code);
 
             if (response && response.success) {
-                console.log('API Response:', response); // Debug log
+                // console.log('API Response:', response); // Debug log
                 let list = [];
                 let jId = null;
                 let assessmentDetails = null;
@@ -166,7 +166,7 @@ export default function AssignQuestions() {
                               response.data?.totalQuestions || 
                               assessmentDetails?.totalQuestions || 0;
                 setTotalQuestions(total);
-                console.log('Total Questions Set:', total); // Debug log
+                // console.log('Total Questions Set:', total); // Debug log
             }
         } catch (error) {
             console.error("Error in fetchAssignedQuestions:", error);
