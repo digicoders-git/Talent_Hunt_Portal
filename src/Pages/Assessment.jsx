@@ -60,6 +60,36 @@ export default function Assessment() {
                 const response = await getAssessmentByCodeApi(code, studentCourse, studentYear);
 
                 if (response.success && response.data) {
+                    // Time check
+                    const assessmentInfo = response.data.assesmentId;
+                    if (assessmentInfo?.startDateTime && assessmentInfo?.endDateTime) {
+                        const now = new Date();
+                        const start = new Date(assessmentInfo.startDateTime);
+                        const end = new Date(assessmentInfo.endDateTime);
+                        if (now < start) {
+                            setLoading(false);
+                            Swal.fire({
+                                title: 'Test Not Started Yet!',
+                                text: `This test starts at ${start.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+                                icon: 'warning',
+                                confirmButtonColor: '#0D9488',
+                                allowOutsideClick: false
+                            }).then(() => navigate('/'));
+                            return;
+                        }
+                        if (now > end) {
+                            setLoading(false);
+                            Swal.fire({
+                                title: 'Test Ended!',
+                                text: `This test ended at ${end.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+                                icon: 'error',
+                                confirmButtonColor: '#0D9488',
+                                allowOutsideClick: false
+                            }).then(() => navigate('/'));
+                            return;
+                        }
+                    }
+
                     // Check allowedYears before proceeding
                     const allowedYears = response.data.assesmentId?.allowedYears || [];
                     if (allowedYears.length > 0) {
