@@ -562,59 +562,40 @@ export default function DigiCodersPortal() {
             }
             const now = new Date();
 
-            // Helper to parse "DD/MM/YYYY, HH:mm:ss"
-            const parseAssessmentDate = (dateStr) => {
-                if (!dateStr) return new Date();
-                try {
-                    // Check if it's in a format with comma like "06/01/2026, 11:20:00"
-                    if (dateStr.includes(',')) {
-                        const [datePart, timePart] = dateStr.split(',').map(s => s.trim());
-                        // STRICTLY DD/MM/YYYY format based on Jan 6th being "06/01"
-                        const [dayStr, monthStr, yearStr] = datePart.split('/');
-                        const [hours, minutes, seconds] = timePart.split(':').map(Number);
-
-                        const day = parseInt(dayStr, 10);
-                        const month = parseInt(monthStr, 10);
-                        const year = parseInt(yearStr, 10);
-
-                        if (day && month && year) {
-                            return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
-                        }
-                    }
-                    // Fallback to standard parsing
-                    return new Date(dateStr);
-                } catch (e) {
-                    console.error("Date parsing error:", e);
-                    return new Date(dateStr);
-                }
-            };
-
-            const start = parseAssessmentDate(startDateTime);
-            const end = parseAssessmentDate(endDateTime);
-
-            if (!status) {
-                Swal.fire({
-                    title: 'Assessment Inactive!',
-                    text: 'This assessment is currently not active.',
-                    icon: 'warning',
-                    confirmButtonColor: '#0D9488',
-                });
+            // ✅ Pehle register karo - data save ho jaye chahe andar jaye ya na jaye
+            const payload = { ...formData, code: enteredCode };
+            const response = await studentRegisterApi(payload);
+            if (!response.success) {
+                Swal.fire({ title: 'Registration Failed!', text: response.message || 'Something went wrong', icon: 'error', confirmButtonColor: '#0D9488' });
                 setSubmitting(false);
                 return;
             }
+            const studentData = {
+                name: response.newStudent.name,
+                mobile: response.newStudent.mobile,
+                email: response.newStudent.email,
+                college: response.newStudent.college,
+                year: response.newStudent.year,
+                course: response.newStudent.course,
+                code: response.newStudent.code,
+                id: response.newStudent._id,
+                submissionDate: response.newStudent.createdAt,
+                isLoggedIn: true
+            };
+            const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
+            const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
+            localStorage.setItem('studentCourse', courseId);
+            localStorage.setItem('studentYear', yearId);
+            localStorage.setItem('studentYearName', formData.year);
 
+            if (!status) {
+                Swal.fire({ title: 'Assessment Inactive!', text: 'This assessment is currently not active.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
+            }
             if (now < start) {
-                // Start countdown
                 const tick = () => {
                     const remaining = new Date(start) - new Date();
-                    if (remaining <= 0) {
-                        clearInterval(countdownRef.current);
-                        setCountdown(null);
-                        // Play start sound
-                        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-09.mp3');
-                        audio.play().catch(() => {});
-                        return;
-                    }
+                    if (remaining <= 0) { clearInterval(countdownRef.current); setCountdown(null); return; }
                     const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
@@ -624,28 +605,14 @@ export default function DigiCodersPortal() {
                 tick();
                 clearInterval(countdownRef.current);
                 countdownRef.current = setInterval(tick, 1000);
-                // Play tick sound every second
-                const beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA==');
-                beep.play().catch(() => {});
-                setSubmitting(false);
-                return;
+                setSubmitting(false); return;
             }
-
             if (now > end) {
-                Swal.fire({
-                    title: 'Assessment Ended!',
-                    text: `This assessment ended at ${end.toLocaleString()}`,
-                    icon: 'error',
-                    confirmButtonColor: '#0D9488',
-                });
-                setSubmitting(false);
-                return;
+                Swal.fire({ title: 'Assessment Ended!', text: `This assessment ended at ${end.toLocaleString()}`, icon: 'error', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
             }
 
-            // Check if questions are assigned for this course+year BEFORE registering
-            const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
-            const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
-
+            // ✅ Ab questions check karo
             const notEligibleMsg = `
                 <p style="margin-bottom:10px">This assessment is only for eligible years/courses.</p>
                 <table style="width:100%;font-size:13px;text-align:left;border-collapse:collapse">
@@ -658,69 +625,19 @@ export default function DigiCodersPortal() {
                 </table>
                 <p style="margin-top:10px;color:#dc2626">Your Year: <b>${formData.year}</b></p>
             `;
-
             try {
                 const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
                 if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
                     Swal.fire({ title: '\uD83D\uDEAB This Test is Not For You!', html: notEligibleMsg, icon: 'error', confirmButtonColor: '#0D9488' });
-                    setSubmitting(false);
-                    return;
+                    setSubmitting(false); return;
                 }
             } catch (qErr) {
                 Swal.fire({ title: '\uD83D\uDEAB This Test is Not For You!', html: notEligibleMsg, icon: 'error', confirmButtonColor: '#0D9488' });
-                setSubmitting(false);
-                return;
+                setSubmitting(false); return;
             }
 
-            // Ensure assessment code is uppercase when sent to backend
-            const payload = {
-                ...formData,
-                code: enteredCode
-            };
-            const response = await studentRegisterApi(payload);
-            if (response.success) {
-                // Store student data in localStorage for persistence
-                const studentData = {
-                    name: response.newStudent.name,
-                    mobile: response.newStudent.mobile,
-                    email: response.newStudent.email,
-                    college: response.newStudent.college,
-                    year: response.newStudent.year,
-                    course: response.newStudent.course,
-                    code: response.newStudent.code,
-                    id: response.newStudent._id,
-                    submissionDate: response.newStudent.createdAt,
-                    isLoggedIn: true
-                };
-
-                // Save course and year for question filtering
-                const courseObj = academicData.courses.find(c => c.course === formData.course);
-                const yearObj = academicData.years.find(y => y.academicYear === formData.year);
-                localStorage.setItem('studentCourse', courseId);
-                localStorage.setItem('studentYear', yearId);
-                localStorage.setItem('studentYearName', formData.year);
-
-                Swal.fire({
-                    title: 'Registration Successful!',
-                    text: response.message || 'Starting Assessment...',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    background: '#FFFFFF',
-                    color: '#2D3748'
-                });
-
-                setTimeout(() => {
-                    navigate(`/assessment/${studentData.code}/${studentData.id}`);
-                }, 1500);
-            } else {
-                Swal.fire({
-                    title: 'Registration Failed!',
-                    text: response.message || 'Something went wrong',
-                    icon: 'error',
-                    confirmButtonColor: '#0D9488',
-                });
-            }
+            Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false, background: '#FFFFFF', color: '#2D3748' });
+            setTimeout(() => { navigate(`/assessment/${studentData.code}/${studentData.id}`); }, 1500);
         } catch (error) {
             console.error('Registration error:', error);
             Swal.fire({
