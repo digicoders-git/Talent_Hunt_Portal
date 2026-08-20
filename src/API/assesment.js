@@ -58,3 +58,11 @@ export const deleteAssessmentApi = async (id) => {
   const res = await api.delete(`/admin/assesment/delete/${id}`);
   return res.data;
 };
+
+// Get Assessment by ID
+export const getAssessmentByIdApi = async (id) => {
+  const res = await api.get(`/admin/assesment/get`);
+  const all = res.data?.assessments || [];
+  const assessment = all.find(a => a._id === id);
+  return { assessment };
+};

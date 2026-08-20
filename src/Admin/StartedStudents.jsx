@@ -4,6 +4,7 @@ import { Search, ArrowLeft, Download, Loader2, RotateCcw, Phone, MessageCircle }
 import { toast } from 'react-toastify';
 import { getStudentsByAssessmentApi, downloadStudentsByAssessmentApi } from '../API/student';
 import { getMeApi } from '../API/admin';
+import { getAssessmentByIdApi } from '../API/assesment';
 import { OtpVerificationModal } from '../Comp/OtpVerificationModal';
 
 export default function StartedStudents() {
@@ -31,9 +32,17 @@ export default function StartedStudents() {
     const [userRole, setUserRole] = useState(null);
 
     const fetchResults = async (page = 1) => {
-        const code = location.state?.assessmentCode;
+        let code = location.state?.assessmentCode;
+
         if (!code) {
-            toast.error("Assessment Code missing. Please navigate from Assessment page.");
+            try {
+                const res = await getAssessmentByIdApi(assessmentId);
+                code = res?.assessment?.assessmentCode;
+            } catch (e) {}
+        }
+
+        if (!code) {
+            toast.error("Assessment Code missing.");
             setLoading(false);
             return;
         }
