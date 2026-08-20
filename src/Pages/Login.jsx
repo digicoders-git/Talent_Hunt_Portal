@@ -528,6 +528,8 @@ export default function DigiCodersPortal() {
             }
 
             const { startDateTime, endDateTime, status } = assessmentData;
+            const start = new Date(startDateTime);
+            const end = new Date(endDateTime);
 
             // Check allowed years
             const allowedYears = assessmentData?.allowedYears || [];
