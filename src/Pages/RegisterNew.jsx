@@ -158,17 +158,36 @@ export default function RegisterNew() {
                 setSubmitting(false); return;
             }
 
+            // ✅ Pehle register karo - data save ho jaye chahe andar jaye ya na jaye
             const response = await studentRegisterNewApi({ ...formData, code: enteredCode });
-            if (response.success) {
-                const studentData = response.newStudent;
-                // Save course and year for assessment question filtering
-                localStorage.setItem('studentCourse', academicData.courses.find(c => c.course === formData.course)?._id || formData.course);
-                localStorage.setItem('studentYear', academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year);
-                Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false });
-                setTimeout(() => navigate(`/assessment/${studentData.code}/${studentData._id}`), 1500);
-            } else {
+            if (!response.success) {
                 Swal.fire({ title: 'Registration Failed!', text: response.message || 'Something went wrong', icon: 'error', confirmButtonColor: '#0D9488' });
+                setSubmitting(false);
+                return;
             }
+
+            const studentData = response.newStudent;
+            const courseId = academicData.courses.find(c => c.course === formData.course)?._id || formData.course;
+            const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
+            localStorage.setItem('studentCourse', courseId);
+            localStorage.setItem('studentYear', yearId);
+
+            // ✅ Ab questions check karo
+            try {
+                const questionCheck = await getAssessmentByCodeApi(enteredCode, courseId, yearId);
+                if (!questionCheck.success || !questionCheck.data?.questionIds?.length) {
+                    Swal.fire({ title: '🚫 No Questions Found!', text: 'No questions assigned for your course and year. Please contact admin.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                    setSubmitting(false);
+                    return;
+                }
+            } catch (qErr) {
+                Swal.fire({ title: '🚫 Not Eligible!', text: qErr.response?.data?.message || 'No questions assigned for your course and year. Please contact admin.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                setSubmitting(false);
+                return;
+            }
+
+            Swal.fire({ title: 'Registration Successful!', text: response.message || 'Starting Assessment...', icon: 'success', timer: 1500, showConfirmButton: false });
+            setTimeout(() => navigate(`/assessment/${studentData.code}/${studentData._id}`), 1500);
         } catch (error) {
             Swal.fire({ title: 'Error!', text: error.response?.data?.message || 'An error occurred during registration.', icon: 'error', confirmButtonColor: '#0D9488' });
         } finally {
