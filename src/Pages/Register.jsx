@@ -125,40 +125,6 @@ export default function Register() {
                 return;
             }
 
-            const assessmentData = startCheckResponse.data.assesmentId || startCheckResponse.data;
-            const { startDateTime, endDateTime, status } = assessmentData;
-            const now = new Date();
-
-            const parseAssessmentDate = (dateStr) => {
-                if (!dateStr) return new Date();
-                try {
-                    if (dateStr.includes(',')) {
-                        const [datePart, timePart] = dateStr.split(',').map(s => s.trim());
-                        const [dayStr, monthStr, yearStr] = datePart.split('/');
-                        const [hours, minutes, seconds] = timePart.split(':').map(Number);
-                        const day = parseInt(dayStr, 10), month = parseInt(monthStr, 10), year = parseInt(yearStr, 10);
-                        if (day && month && year) return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
-                    }
-                    return new Date(dateStr);
-                } catch (e) { return new Date(dateStr); }
-            };
-
-            const start = parseAssessmentDate(startDateTime);
-            const end = parseAssessmentDate(endDateTime);
-
-            if (!status) {
-                Swal.fire({ title: 'Assessment Inactive!', text: 'This assessment is currently not active.', icon: 'warning', confirmButtonColor: '#0D9488' });
-                setSubmitting(false); return;
-            }
-            if (now < start) {
-                Swal.fire({ title: '⏳ Talent Hunt Scholarship Test', text: `Talent Hunt Scholarship Test will start from ${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })} on ${start.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}. Please be ready! 🎯`, icon: 'info', confirmButtonColor: '#0D9488' });
-                setSubmitting(false); return;
-            }
-            if (now > end) {
-                Swal.fire({ title: 'Assessment Ended!', text: `This assessment ended at ${end.toLocaleString()}`, icon: 'error', confirmButtonColor: '#0D9488' });
-                setSubmitting(false); return;
-            }
-
             // ✅ Pehle register karo - data save ho jaye chahe andar jaye ya na jaye
             const response = await studentRegisterApi({ ...formData, code: enteredCode });
             if (!response.success) {
@@ -172,6 +138,19 @@ export default function Register() {
             const yearId = academicData.years.find(y => y.academicYear === formData.year)?._id || formData.year;
             localStorage.setItem('studentCourse', courseId);
             localStorage.setItem('studentYear', yearId);
+
+            if (!status) {
+                Swal.fire({ title: 'Assessment Inactive!', text: 'This assessment is currently not active.', icon: 'warning', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
+            }
+            if (now < start) {
+                Swal.fire({ title: '⏳ Talent Hunt Scholarship Test', text: `Talent Hunt Scholarship Test will start from ${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })} on ${start.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}. Please be ready! 🎯`, icon: 'info', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
+            }
+            if (now > end) {
+                Swal.fire({ title: 'Assessment Ended!', text: `This assessment ended at ${end.toLocaleString()}`, icon: 'error', confirmButtonColor: '#0D9488' });
+                setSubmitting(false); return;
+            }
 
             // ✅ Ab questions check karo
             try {
